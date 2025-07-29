@@ -1,0 +1,6 @@
+[Unit]
+Description=create a weekly snapshot of the backup
+
+[Service]
+Type=oneshot
+ExecStart=/root/bin/snapshot-monthly

@@ -1,0 +1,52 @@
+#!/bin/bash
+
+#############
+# Variables #
+#############
+
+# Location of the backup mirror
+MIRROR_DIR=/backup/mirror
+
+# Number of hourly backups to keep
+HOURLY=24
+
+# Location of the hourly snapshots
+HOURLY_DIR=/backup/snapshots/hourly
+
+# Load globals and overwrite
+. /etc/backup/backup.conf
+
+# exit if there's an error
+set -e
+
+#################################
+#  create the hourly snapshots  #
+#################################
+
+# Save the time
+DATE=$(date +%F_%H00)
+
+# prune the hourly snapshot directory
+while [[ $(find $HOURLY_DIR -maxdepth 1 -iname "hourly_*" -type d | wc -l) -ge $HOURLY ]]
+do
+	rm -fr $(find $HOURLY_DIR -maxdepth 1 -iname "hourly_*" -type d | sort | head -n 1)
+done
+
+# if there is a mirror to snapshot, and if there are no snapshots in the hourly directory which are less than 45 minutes old, make a new snapshot
+if [[ -d $MIRROR_DIR ]] ; then
+       if [[ -z $(find $HOURLY_DIR -maxdepth 1 -iname "hourly_*" -type d -mmin -$((45))) ]] ; then
+		
+		# create an archived and hardlinked copy
+		cp -al $MIRROR_DIR $HOURLY_DIR/hourly_$DATE
+		
+		# update the mtime of the most recent hourly snapshot
+		touch $HOURLY_DIR/hourly_$DATE
+		
+		# log the completion
+		logger "created an hourly snapshot at $(date)"
+	else
+		logger "too soon to create an hourly snapshot"
+	fi
+else
+	logger "no mirror to back up. Have you done an rsync?"
+fi

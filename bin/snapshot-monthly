@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#############
+# Variables #
+#############
+
+# Number of monthly snapshots to keep
+MONTHLY=3
+
+# Location of the monthly snapshots
+MONTHLY_DIR=/backup/snapshots/monthly
+
+# Load globals and overwrite
+. /etc/backup/backup.conf
+
+# exit if there's an error
+set -e
+
+#################################
+#  create the monthly snapshot  #
+#################################
+
+# Save the time
+DATE=$(date +%F_%H00)
+
+# Fetch the most recent weekly snapshot 
+MONTHLY_SOURCE=$(find /backup/snapshots/weekly/ -maxdepth 1 -iname "weekly_*" -type d | sort | head -n 1)
+
+# prune the monthly snapshots
+while [[ $(find $MONTHLY_DIR -maxdepth 1 -iname "monthly_*" -type d | wc -l) -ge $MONTHLY ]]
+do
+	rm -fr $(find $MONTHLY_DIR -maxdepth 1 -iname "monthly_*" -type d | sort | head -n 1)
+done
+
+# if there is a weekly backup to snapshot, and if there are no backups in the monthly directory which are less than 28 days old, make a new backup
+if [[ -d $MONTHLY_SOURCE ]] ; then
+       if [[ -z $(find $MONTHLY_DIR -maxdepth 1 -iname "monthly_*" -type d -mtime -28) ]] ; then
+
+		# create an archived and hardlinked copy of the monthly backup
+		cp -al $MONTHLY_SOURCE $MONTHLY_DIR/monthly_$DATE
+		
+		# log the completion
+		logger -p daemon.info "created a monthly snapshot at $(date)"
+	else
+	        logger -p daemon.info "not yet time to create a monthly snapshot"
+	fi	       
+else
+	logger -p daemon.info "no weekly backup to snapshot"
+fi

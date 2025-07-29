@@ -1,0 +1,8 @@
+[Unit]
+Description=run an hourly backup of the remote system
+After=snapshot-hourly.service
+Requires=snapshot-hourly.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/bin/backup

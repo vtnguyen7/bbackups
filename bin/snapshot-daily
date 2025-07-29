@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#############
+# Variables #
+#############
+
+# Number of daily backups to keep
+DAILY=7
+
+# Location of the daily backups
+DAILY_DIR=/backup/snapshots/daily
+
+# Load globals and overwrite
+. /etc/backup/backup.conf
+
+# exit if there's an error
+set -e
+
+#################################
+#  create the daily snapshots   #
+#################################
+
+# Save the time
+DATE=$(date +%F_%H00)
+
+# Fetch the most recent hourly backup
+DAILY_SOURCE=$(find /backup/snapshots/hourly/ -maxdepth 1 -iname "hourly_*" -type d | sort | head -n 1)
+
+# prune the daily snapshot directory
+while [[ $(find $DAILY_DIR -maxdepth 1 -iname "daily_*" -type d | wc -l) -ge $DAILY ]]
+do
+	rm -fr $(find $DAILY_DIR -maxdepth 1 -iname "daily_*" -type d | sort | head -n 1)
+done
+
+# if there is an hourly backup to snapshot, and if there are no snapshots in the daily directory which are less than 23 hours old, make a new snapshot
+if [[ -d $DAILY_SOURCE ]] ; then
+       	if [[ -z $(find $DAILY_DIR -maxdepth 1 -iname "daily_*" -type d -mmin -$((23*60+30))) ]] ; then
+	
+		# create an archived and hardlinked copy
+		cp -al $DAILY_SOURCE $DAILY_DIR/daily_$DATE
+		
+		# log the completion
+		logger -p daemon.info "created a daily snapshot at $(date)"
+	else
+	        logger -p daemon.info "not yet time to create a daily snapshot"
+	fi
+else
+	logger -p daemon.info "no hourly backup to snapshot"
+fi

@@ -1,0 +1,8 @@
+[Unit]
+Description=create an hourly snapshot of the backup
+After=snapshot-weekly.service
+Requires=snapshot-weekly.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/bin/snapshot-daily
