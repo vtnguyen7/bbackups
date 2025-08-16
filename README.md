@@ -3,6 +3,14 @@
 This is a simple bash implementation of the backup scheme described in the blog post [Easy Automated Snapshot-Style Backups with Linux and Rsync](http://www.mikerubel.org/computers/rsync_snapshots/), which also formed the basis of `rsnapshot`.
 ## Description
 The `bbackups` process is designed for remote pull-style backups with `rsync` over a trusted network connection. It maintains a hot backup of the remote filesystem which we refer to as the *mirror*. It also keeps a number of hourly, daily, weekly and monthly snapshots which use hard links to track only changes to files. Additionally, this implementation makes use of systemd timers to maintain process dependencies.
+### How to configure
+I'm assuming a working familiarity with linux, the command line, and your filesystem. If the instructions below don't make sense to you, maybe this isn't the backup solution for you...
+1. Move the files from `svc` into your systemd services directory (usually `/etc/systemd/system/`).
+2. Move the files from `bin` into `/etc/root/bin` (you can choose any other directory of course, however you'd have to change the service files).
+3. Move the files from `conf` to `/etc/backup/` (if you want this elsewhere, you'll have to change where the backup scripts are pointing to).
+4. Edit the `/etc/backup/backup.conf` file to your liking.
+5. Enable the systemd timers which you want to run.
+I have zero plans to write an install script right now, but this may come at some point in the future.
 ### The Order of Operations
 Ignoring the snapshot rotation which happens before every step, `bbackups` goes off the following order
 1. If a weekly snapshot exists, and the latest monthly snapshot is older than 28 days, create a monthly snapshot
