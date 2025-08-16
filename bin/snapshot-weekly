@@ -4,12 +4,6 @@
 # Variables #
 #############
 
-# Number of weekly snapshots to keep
-WEEKLY=4
-
-# Location of the weekly snapshots
-WEEKLY_DIR=/backup/snapshots/weekly
-
 # Load globals and overwrite
 . /etc/backup/backup.conf
 
@@ -23,27 +17,23 @@ set -e
 # Save the time
 DATE=$(date +%F_%H00)
 
-# Fetch the most recent daily backup
-WEEKLY_SOURCE=$(find /backup/snapshots/daily/ -maxdepth 1 -iname "daily_*" -type d | sort | head -n 1)
-
 # prune the daily snapshots
 while [[ $(find $WEEKLY_DIR -maxdepth 1 -iname "weekly_*" -type d | wc -l) -gt $WEEKLY ]]
 do
 	rm -fr $(find $WEEKLY_DIR -maxdepth 1 -iname "weekly_*" -type d | sort | head -n 1)
 done
 
-# if there is an daily backup to snapshot, and if there are no snapshots in the daily directory which are less than 23 hours old, make a new snapshot
-if [[ -d $WEEKLY_SOURCE ]] ; then
-       	if [[ -z $(find $WEEKLY_DIR -maxdepth 1 -iname "weekly_*" -type d -mtime -6) ]] ; then
+# if there are no snapshots in the weekly directory which are less than 6 days old, make a new snapshot
+if [[ -z $(find $WEEKLY_DIR -maxdepth 1 -iname "weekly_*" -type d -mtime -6) ]] ; then
+
+	# create an archived and hardlinked copy
+	cp -al $MIRROR_DIR $WEEKLY_DIR/weekly_$DATE
 	
-		# create an archived and hardlinked copy
-		cp -al $WEEKLY_SOURCE $WEEKLY_DIR/weekly_$DATE
-		
-		# log the completion
-		logger -p daemon.info "created a weekly snapshot at $(date)"
-	else
-	        logger -p daemon.info "not yet time to create a weekly snapshot"
-	fi
+	# touch the directory to update the mtime
+	touch $WEEKLY_DIR/weekly_$DATE
+	
+	# log the completion
+	logger -p daemon.info "created a weekly snapshot at $(date)"
 else
-	logger -p daemon.info "no daily backup to snapshot"
+        logger -p daemon.info "not yet time to create a weekly snapshot"
 fi

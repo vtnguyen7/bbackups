@@ -4,15 +4,6 @@
 # Variables #
 #############
 
-# Location of the backup mirror
-MIRROR_DIR=/backup/mirror
-
-# Number of hourly backups to keep
-HOURLY=24
-
-# Location of the hourly snapshots
-HOURLY_DIR=/backup/snapshots/hourly
-
 # Load globals and overwrite
 . /etc/backup/backup.conf
 

@@ -1,27 +1,10 @@
 #!/bin/bash
 
+#!/bin/bash
+
 #############
 # Variables #
 #############
-
-# Backup source
-SRC=10.1.0.180:/data/
-
-# Backup destination (local mirror)
-MIRROR_DIR=/backup/mirror
-
-# Location of the rsync excludes file
-EXCLUDES=/etc/backup/excludes.conf
-
-# Location of the rsync password file
-PASS_FILE=/etc/backup/pass
-
-# Location of the log directory
-LOG_DIR=/var/log/backup
-
-SSH_KEY=/root/.ssh/id_ed25519
-
-MAX_LOGS=5
 
 # Load globals and overwrite
 . /etc/backup/backup.conf
@@ -32,18 +15,6 @@ set -e
 #################################
 #       Sync the backups        #
 #################################
-
-# Save the time
-DATE=$(date +%F_%H-%M-%S)
-
-# rotate the existing rsync log
-mv $LOG_DIR/rsync.log $LOG_DIR/rsync.log.$DATE
-
-# prune the logs
-while [[ $(find $LOG_DIR -iname "rsync.log*" | wc -l) -ge $MAX_LOGS ]]
-do
-	rm -fr $(find $LOG_DIR -iname "rsync.log*" -type f | sort | head -n 1)
-done
 
 # sync (archive) the data, mirror style
 rsync -av -v -n -e "ssh -i $SSH_KEY" --delete --delete-excluded --exclude-from=$EXCLUDES "$SRC" "$MIRROR_DIR" 2>&1 >> $LOG_DIR/rsync.log
